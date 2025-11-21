@@ -5,30 +5,30 @@ const getAllUsers =  async () => {
     return returnedUsers.rows;
 };
 
+const getUser = async (id) => {
+    const varSQL = "SELECT id_usuario, nome , telefone, email FROM usuario WHERE id_usuario = $1";
+    const returnedUser = await connection.query(varSQL, [id]);
+    return returnedUser.rows[0];
+}
+
 const createUser = async (user) => {
-    const varSQL = "INSERT INTO usuario (nome, senha, telefone, email) VALUES ($1, $2, $3, $4   ) RETURNING *";
+    const varSQL = "INSERT INTO usuario (nome, senha, telefone, email) VALUES ($1, $2, $3, $4) RETURNING *";
     const createdUser = await connection.query(varSQL, [user.nome, user.senha, user.telefone, user.email]); 
     return createdUser.rows[0];
 }
 
 const deleteUser = async (id) => {
-    const varSQL = "UPDATE usuario SET excluido = true, data_exclusao = now() WHERE id_usuario = $1 ";
-    await connection.query(varSQL, [id]);
+    const varSQL = "UPDATE usuario SET excluido = true, data_exclusao = now() WHERE id_usuario = $1 RETURNING *";
+    const deletedUser = await connection.query(varSQL, [id]);
+    return deletedUser.rows[0];
 }
-
-/*
-    Aqui entra uma noção importante, a questão é: o consumidor da API pode ter permissões de administrador??
-    ou os dados podem ser consumidos poor uma fonte externa ?
-    seguindo o princípio do SGE, então o client pode e deve alterar quando achar necessário as permissões de admin pelo SGEweb
-*/
 
 //aqui, assumi que user  = obj{ nome, senha, admin, telefone, email}
 
 const updateUser = async(id, user) => {
 
-    //const allowedColumns = ['nome', 'senha', 'admin', 'telefone', 'email'];
-    const realColumns = Object.keys(user);//.filter(key => allowedColumns.includes(key));
-
+    const allowedColumns = ['nome', 'senha', 'admin', 'telefone', 'email'];
+    const realColumns = Object.keys(user).filter(key => allowedColumns.includes(key));
     
     const varSQLstart = "UPDATE usuario SET "; 
     const varSQLmid = realColumns.map((val, index) => { return `"${val}" = $${index + 1}`;}).join(', ');
@@ -38,12 +38,13 @@ const updateUser = async(id, user) => {
     const varSQLcomplete = varSQLstart + varSQLmid + varSQLend;
 
     const updatedUser = await connection.query(varSQLcomplete, params);
-    return updatedUser.rows;
+    return updatedUser.rows[0];
 }
 
 module.exports = {
     getAllUsers, 
     createUser,
     deleteUser,
-    updateUser
+    updateUser,
+    getUser
 };

@@ -1,18 +1,10 @@
-const passwordCheck = (request, response, next) => {
-    const { body } = request;
-    if(body.senha.length < 8 || body.senha.length > 16)
-        return response.status(400).json({message:"Senha com tamanho invalido PRECISA ESTAR ENTRE 8 e 16"});
-
-    next();
-}
-
 const validateFields = (request, response, next) => {
-    const { body } = request;
+    const { body } = request
 
     if(typeof body !== 'object' || body === null || Array.isArray(body))
         return response.status(400).json({message:"body não respeita a estrutura da API"});
 
-    const allowedColumns = ['nome', 'senha', 'admin', 'telefone', 'email'];
+    const allowedColumns = ['quantidade', 'valor_unitario'];
     const realColumns = Object.keys(body).filter(key => allowedColumns.includes(key));
 
     if (realColumns.length === 0) {
@@ -24,15 +16,15 @@ const validateFields = (request, response, next) => {
 }
 
 const validateFieldsExtrict = async (request, response, next) => {
-    const { body } = request;
+    const { body } = request
 
     if(typeof body !== 'object' || body === null || Array.isArray(body))
         return response.status(400).json({message:"body não respeita a estrutura da API"});
 
-    const allowedColumns = ['nome', 'senha', 'telefone', 'email'];
+    const allowedColumns = ['fk_produto','quantidade', 'valor_unitario'];
     const realColumns = Object.keys(body).filter(key => allowedColumns.includes(key));
 
-    if (realColumns.length != 4) {
+    if (realColumns.length != 3) {
         return response.status(400).json({message:"Nenhum campo válido foi chamado"});
     }
 
@@ -41,5 +33,5 @@ const validateFieldsExtrict = async (request, response, next) => {
 
 
 module.exports = {
-   validateFields , validateFieldsExtrict, passwordCheck
+   validateFields , validateFieldsExtrict
 }

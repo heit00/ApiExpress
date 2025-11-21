@@ -1,5 +1,3 @@
-
-
 const validateFields = (request, response, next) => {
     const { body } = request
 
@@ -33,15 +31,7 @@ const validateFieldsExtrict = async (request, response, next) => {
     next();
 }
 
-const validateId = (request, response, next) => {
-    if(!request.body.id)
-        return response.status(400).json({message:"Nenhum id informado"});
-    if(request.body.id === '')
-        return response.status(400).json({message:"Nenhum id informado"});
-
-    next();
-}
 
 module.exports = {
-   validateFields , validateId, validateFieldsExtrict
+   validateFields, validateFieldsExtrict
 }

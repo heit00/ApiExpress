@@ -5,6 +5,12 @@ const getAllProducts =  async () => {
     return returnedProducts.rows;
 };
 
+const getProduct = async (id) => {
+    const varSQL = "SELECT * FROM produto WHERE id_produto = $1";
+    const returnedProduct = await connection.query(varSQL, [id]);
+    return returnedProduct.rows[0];
+}
+
 const createProduct = async (product) => {
     const varSQL = "INSERT INTO produto (descricao, nome, valor_unitario, imagem) VALUES ($1, $2, $3, $4) RETURNING *";
     const createdProduct = await connection.query(varSQL, [product.descricao, product.nome, product.valor_unitario, product.imagem]); 
@@ -12,16 +18,16 @@ const createProduct = async (product) => {
 }
 
 const deleteProduct = async (id) => {
-    const varSQL = "UPDATE produto SET excluido = true, data_exclusao = now() WHERE id_produto = $1 ";
-    await connection.query(varSQL, [id]);
+    const varSQL = "UPDATE produto SET excluido = true, data_exclusao = now() WHERE id_produto = $1 RETURNING *";
+    const deletedProduct =  await connection.query(varSQL, [id]);
+    return deletedProduct.rows[0];
 }
 
 const updateProduct = async(id, product) => {
 
-    //const allowedColumns = ['descricao', 'nome', 'valor_unitario', 'imagem'];
-    const realColumns = Object.keys(product)//.filter(key => allowedColumns.includes(key));
+    const allowedColumns = ['descricao', 'nome', 'valor_unitario', 'imagem'];
+    const realColumns = Object.keys(product).filter(key => allowedColumns.includes(key));
 
-    
     const varSQLstart = "UPDATE produto SET "; 
     const varSQLmid = realColumns.map((val, index) => { return `"${val}" = $${index + 1}`;}).join(', ');
     const realValues = realColumns.map(key => product[key]);
@@ -30,12 +36,13 @@ const updateProduct = async(id, product) => {
     const varSQLcomplete = varSQLstart + varSQLmid + varSQLend;
 
     const updatedProduct = await connection.query(varSQLcomplete, params);
-    return updatedProduct.rows;
+    return updatedProduct.rows[0];
 }
 
 module.exports = {
     getAllProducts, 
     createProduct,
     deleteProduct,
-    updateProduct
+    updateProduct,
+    getProduct
 };
