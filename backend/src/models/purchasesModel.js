@@ -11,6 +11,12 @@ const getPurchase = async (id) => {
     return returnedPurchase.rows[0];
 }
 
+const  getPurchasesFromUser = async (id) => {
+    const varSQL = "SELECT * FROM compra WHERE fk_usuario = $1";
+    const returnedPurchases = await connection.query(varSQL, [id]);
+    return returnedPurchases.rows;
+}
+
 const createPurchase = async (purchase) => {
     const varSQL = "INSERT INTO compra (fk_usuario, data, acrescimo_total, sessao) VALUES ($1, $2, $3, $4) RETURNING *";
     const createdpurchase = await connection.query(varSQL, [purchase.fk_usuario, purchase.data, purchase.acrescimo_total, purchase.sessao]); 
@@ -44,5 +50,6 @@ module.exports = {
     createPurchase,
     deletePurchase,
     updatePurchase,
-    getPurchase
+    getPurchase,
+    getPurchasesFromUser
 }

@@ -6,7 +6,7 @@ const getAllUsers =  async () => {
 };
 
 const getUser = async (id) => {
-    const varSQL = "SELECT id_usuario, nome , telefone, email FROM usuario WHERE id_usuario = $1";
+    const varSQL = "SELECT id_usuario, nome , telefone, email, excluido FROM usuario WHERE id_usuario = $1";
     const returnedUser = await connection.query(varSQL, [id]);
     return returnedUser.rows[0];
 }
@@ -25,26 +25,27 @@ const deleteUser = async (id) => {
 
 //aqui, assumi que user  = obj{ nome, senha, admin, telefone, email}
 
-const updateUser = async(id, user) => {
 
-    const allowedColumns = ['nome', 'senha', 'admin', 'telefone', 'email'];
+const dynamicUpdate = async (id, user, allowedColumns = ['nome', 'senha', 'admin', 'telefone', 'email', 'excluido'], returns = ['nome', 'senha', 'admin', 'telefone', 'email', 'excluido']) => {
     const realColumns = Object.keys(user).filter(key => allowedColumns.includes(key));
-    
     const varSQLstart = "UPDATE usuario SET "; 
     const varSQLmid = realColumns.map((val, index) => { return `"${val}" = $${index + 1}`;}).join(', ');
     const realValues = realColumns.map(key => user[key]);
     const params = [...realValues, id];
-    const varSQLend = ` WHERE id_usuario = $${params.length} RETURNING *`;
+    const varSQLend = ` WHERE id_usuario = $${params.length} RETURNING ${returns.join()}`;
     const varSQLcomplete = varSQLstart + varSQLmid + varSQLend;
-
     const updatedUser = await connection.query(varSQLcomplete, params);
     return updatedUser.rows[0];
 }
+const updateUser = async(id, user) => await(dynamicUpdate(id, user));
+
+const updateMe = async (id, user) => await(dynamicUpdate(id, user, ['nome', 'senha', 'telefone', 'email'], ['nome', 'telefone', 'email']));
 
 module.exports = {
     getAllUsers, 
     createUser,
     deleteUser,
     updateUser,
-    getUser
+    getUser,
+    updateMe
 };

@@ -3,6 +3,8 @@ const bcrypt  = require('bcrypt');
 const connection = require('../models/connection');
 const jwt = require('jsonwebtoken');
 const { executeBdActionAsync:executeAct } = require('../controllers/globalController');
+const usersModel = require('../models/usersModel');
+
 
 const showError = (err, _request, response, _next)=>{
     console.log(err, _next);
@@ -16,9 +18,15 @@ const login = async (request, response, next) => {
         return;
     }
     try{
-        const result = await executeAct(() => connection.query("SELECT nome, senha, email, admin, id_usuario FROM usuario WHERE email = $1", [body.email])); 
+        const result = await executeAct(() => connection.query("SELECT nome, senha, email, admin, id_usuario, excluido FROM usuario WHERE email = $1", [body.email])); 
         const testUser = result.rows[0];
-        if(testUser && await bcrypt.compare(body.senha, testUser.senha)){
+        console.log(testUser)
+        if(!testUser)
+            throw new AppError(`Email ou Senha incorretos.`, 401);
+        if(testUser.excluido == true)
+            throw new AppError('Usuário excluído, crie outro.', 401);
+        if(await bcrypt.compare(body.senha, testUser.senha)){
+
             const token = jwt.sign(
                 {
                     nome: testUser.nome,
@@ -36,7 +44,8 @@ const login = async (request, response, next) => {
             
             return response.status(200).json({ 
                 message: "Login realizado com sucesso.",
-                token: token 
+                token: token,
+                id: testUser.id_usuario 
             });
         }
         else
@@ -48,11 +57,28 @@ const login = async (request, response, next) => {
     }
 }
 
+const isDeleted =  async (request, response, next) => {
+    try{
+        const { id } = request.user;
+        const user = await executeAct(()=> usersModel.getUser(id));
+        if(!user)
+            throw new AppError(`O usuário de ID ${id} Não existe.`,404);
+        if(user.excluido == true)
+            throw new AppError('Usuário excluido, crie outra conta.', 401);
+        next();
+        return;
+    }
+    catch(err){
+        next(err);
+        return;
+    }
+}
+
 const injectUserId = (columnName) => {
     return (request, response, next) => {
         try{
-            if(!request.user)
-                throw new AppError("O usuário precisa estar autenticado.");
+            //if(!request.user)
+                //throw new AppError("O usuário precisa estar autenticado.", 401);
             if(request.user.acesso !== 'admin'){
                 request.body[columnName] = request.user.id;
                 next();
@@ -68,13 +94,14 @@ const injectUserId = (columnName) => {
     }
 }
 
-const setParamsToMySelf = (paramName) => {
+const verifyParamsToMySelf = (paramName) => {
     return (request, response, next) => {
         try{
-            if(!request.user)
-                throw new AppError("Usuário precisa estar autenticado.");
+            //if(!request.user)
+                //throw new AppError("Usuário precisa estar autenticado.", 401);
             if(request.user.acesso !== 'admin'){
-                request.params[paramName] = request.user.id;
+                if(request.params[paramName] != request.user.id)
+                    throw new AppError("Acesso negado.", 403);
                 next();
                 return;
             }
@@ -126,11 +153,11 @@ const verifyToken =  (request, _response, next)=> {
 
 const verifyAdmin = (request,response, next) => {
     try{
-        if (!request.user) 
-            throw new AppError("Usuário não autenticado.", 401);
+        //if (!request.user) 
+            //throw new AppError("Usuário não autenticado.", 401);
         
         if(request.user.acesso !== 'admin')
-            throw new AppError("Você não tem permissão para acessar esse endpoint", 403);
+            throw new AppError("Um erro ocorreu", 403);
         
         next();
     }
@@ -140,17 +167,19 @@ const verifyAdmin = (request,response, next) => {
     }
 }
 
-const injectValidateFk = (tableName, targetName, primaryKey) => {
+const injectValidateFk = (tableName, targetName, primaryKey, extrict = true) => {
     return async (request, response, next) => {
         try{
-            if(!request.user)
-                throw new AppError("O usuário precisa estar autenticado.",403);
+            //if(!request.user)
+                //throw new AppError("O usuário precisa estar autenticado.", 403);
             if(request.user.acesso !== 'admin'){
                 const varSQL = `SELECT ${targetName} FROM ${tableName} WHERE ${primaryKey} = $1`;
-                const returned = await connection.query(varSQL, [request.params.id]);
-                const userReturned = returned.rows[0];
-                if(returned.rowCount == 0 || userReturned[targetName] != request.user.id)
+                const returned = await executeAct(()=> connection.query(varSQL, [request.params.id])) ;
+                const tReturned = returned.rows[0];
+                if((returned.rowCount == 0 || tReturned[targetName] != request.user.id) && extrict)
                     throw new AppError(`Erro ao acessar ${tableName}.`, 403);
+                else if(returned.rowCount == 0 || tReturned[targetName] != request.user.id)
+                    throw new AppError(`Recurso de ID ${request.params.id} Não encontrado.`,404);
                 next();
                 return;
             }
@@ -164,4 +193,4 @@ const injectValidateFk = (tableName, targetName, primaryKey) => {
     };
 }
 
-module.exports = { showError, login, verifyToken, verifyAdmin, injectUserId, setParamsToMySelf, injectValidateFk };
+module.exports = { showError, login, verifyToken, verifyAdmin, injectUserId, verifyParamsToMySelf, injectValidateFk, isDeleted };

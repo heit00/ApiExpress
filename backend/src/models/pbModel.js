@@ -11,6 +11,12 @@ const getPb = async (id) => {
     return returnedPb.rows[0];
 }
 
+const getPbFromUser = async (id) => {
+    const varSQL = "SELECT * FROM compra_produto WHERE fk_compra = $1";
+    const returnedPbUser = await connection.query(varSQL, [id]);
+    return returnedPbUser.rows;
+}
+
 const createPb = async (pb) => {
     const varSQL = "INSERT INTO compra_produto (fk_produto, fk_compra, quantidade, valor_unitario) VALUES ($1, $2, $3, $4) RETURNING *";
     const createdPb = await connection.query(varSQL, [pb.fk_produto, pb.fk_compra, pb.quantidade, pb.valor_unitario]); 
@@ -44,5 +50,6 @@ module.exports = {
     createPb,
     deletePb,
     updatePb,
-    getPb
+    getPb,
+    getPbFromUser
 };

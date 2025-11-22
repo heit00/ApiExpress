@@ -10,6 +10,21 @@ const getAllPurchases = async (_request, response, next) => {
     }
 }
 
+const getMyPurchases = async (request, response ,next) => {
+    try{
+        if(!request.user)
+            throw new AppError("Erro ao validar credenciais do token.", 401);
+        const {id} = request.user;
+        const myPurchases = await executeAct(() =>purchaseModel.getPurchasesFromUser(id));
+        if(!myPurchases || myPurchases.length === 0)
+            throw new AppError("Nenhuma Compra encontrada.",404);
+        return response.status(200).json(myPurchases);
+    }
+    catch(err){
+        next(err);
+    }
+}
+
 const getPurchase = async (request, response, next) => {
     try {
         const { id } = request.params;
@@ -59,4 +74,4 @@ const updatePurchase = async (request, response, next) => {
 }
 
 
-module.exports = { getAllPurchases, createPurchase, deletePurchase, updatePurchase, getPurchase };
+module.exports = { getAllPurchases, createPurchase, deletePurchase, updatePurchase, getPurchase, getMyPurchases };

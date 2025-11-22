@@ -14,40 +14,34 @@ const { AppError } = require('./controllers/globalController');
 const router = express.Router();
 
 // LOGIN E CRIAÇÃO DE CONTA //
-router.post('/data/users', usersMiddleware.validateFieldsExtrict, usersMiddleware.passwordCheck, usersController.createUser);
+router.post('/data/users', usersMiddleware.validateFieldsExtrict, usersMiddleware.passwordCheckExtrict, usersController.createUser);
 router.post('/login', globalMiddleware.login);
 router.get('/data/products',productsController.getAllProducts); 
 // JWT // 
 
 router.use(globalMiddleware.verifyToken);
+router.use(globalMiddleware.isDeleted);
 
 // 
 
 // PUBLIC-AUTH ENDPOINTS <<<<<<<<<<<<<<<<<<<
 
-//GETTERS
-
+router.get('/me', usersController.getMe);
+router.put('/me', usersMiddleware.validateFields , usersMiddleware.passwordCheck, usersController.updateMe);
+router.get('/me/purchases', purchasesController.getMyPurchases);
+router.get('/me/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), purchasesController.getPurchase);
+router.get('/me/purchases/:id/products', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), pbController.getAllMyPb);
+router.get('/me/purchases/:id/products/:id2',globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), pbController.getPb  );
 router.get('/data/products/:id', productsController.getProduct);
-router.get('/data/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), purchasesController.getPurchase);
-router.get('/data/purchases/:id/products/:id2',globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), pbController.getPb);
-router.get('/data/users/:id', globalMiddleware.setParamsToMySelf('id'), usersController.getUser);
+router.post('/me/purchases', globalMiddleware.injectUserId('fk_usuario'), purchasesMiddleware.validateFieldsExtrict, purchasesController.createPurchase);
+router.post('/me/purchases/:id/products', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), pbMiddleware.validateFieldsExtrict, pbController.createPb);
+router.put('/me/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), purchasesMiddleware.validateFields ,purchasesController.updatePurchase);
+router.put('/me/purchases/:id/products/:id2', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), pbMiddleware.validateFields ,pbController.updatePb);
+router.delete('/me/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra', false), purchasesController.deletePurchase);
+router.delete('/me/purchases/:id/products/:id2',  globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), pbController.deletePb);
+router.delete('/me',  usersController.deleteMe);
+//
 
-//POST
-router.post('/data/purchases', globalMiddleware.injectUserId('fk_usuario'), purchasesMiddleware.validateFieldsExtrict, purchasesController.createPurchase); 
-router.post('/data/purchases/:id/products', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), pbMiddleware.validateFieldsExtrict, pbController.createPb);
-
-//PUT
-router.put('/data/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), purchasesMiddleware.validateFields ,purchasesController.updatePurchase);
-router.put('/data/purchases/:id/products/:id2',globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), pbMiddleware.validateFields ,pbController.updatePb);
-router.put('/data/users/:id', globalMiddleware.setParamsToMySelf('id'), usersMiddleware.validateFields , usersMiddleware.passwordCheck, usersController.updateUser); 
-
-//DELETE
-router.delete('/data/purchases/:id', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), purchasesController.deletePurchase);
-router.delete('/data/purchases/:id/products/:id2', globalMiddleware.injectValidateFk('compra','fk_usuario','id_compra'), pbController.deletePb);
-router.delete('/data/users/:id', globalMiddleware.setParamsToMySelf('id'), usersController.deleteUser); 
-
-
-//<<<<<<<<<<<<<<<<<<<
 
 // JWT EXTRICT //
 
@@ -57,9 +51,10 @@ router.use(globalMiddleware.verifyAdmin);
 
 
 // USERS STRICT //
+router.get('/data/users/:id', usersController.getUser);
 router.get('/data/users',usersController.getAllUsers);
-
-
+router.put('/data/users/:id', usersMiddleware.validateFields , usersMiddleware.passwordCheck, usersController.updateUser);
+router.delete('/data/users/:id', usersController.deleteUser); 
 // PRODUCTS STRICT//
 
 
@@ -74,9 +69,16 @@ router.delete('/data/entries/:id', entriesController.deleteEntry);
 router.put('/data/entries/:id', entriesMiddleware.validateFields ,entriesController.updateEntry);
 
 // PURCHASES STRICT //
+router.get('/data/purchases/:id/products/:id2', pbController.getPb);
 router.get('/data/purchases',purchasesController.getAllPurchases);
 router.get('/data/pb',pbController.getAllPb);
-
+router.get('/data/purchases/:id', purchasesController.getPurchase);
+router.post('/data/purchases', purchasesMiddleware.validateFieldsExtrict, purchasesController.createPurchase);
+router.post('/data/purchases/:id/products', pbMiddleware.validateFieldsExtrict, pbController.createPb);
+router.put('/data/purchases/:id', purchasesMiddleware.validateFields ,purchasesController.updatePurchase);
+router.put('/data/purchases/:id/products/:id2', pbMiddleware.validateFields ,pbController.updatePb);
+router.delete('/data/purchases/:id', purchasesController.deletePurchase)
+;router.delete('/data/purchases/:id/products/:id2', pbController.deletePb);
 
 // GLOBALS //
 

@@ -1,11 +1,27 @@
 const { executeBdActionAsync: executeAct, AppError } = require('./globalController');
 const pbModel = require('../models/pbModel');
 
+
 const getAllPb = async (_request, response, next) => {
     try {
         const pb = await executeAct(() => pbModel.getAllPb());
         return response.status(200).json(pb);
     } catch (err) {
+        next(err);
+    }
+}
+
+const getAllMyPb = async (request, response, next) => {
+    try{
+        if(!request.user)
+            throw new AppError("Erro ao validar credenciais do token.", 401);
+        const {id} = request.params;
+        const allMyPb = await executeAct(()=> pbModel.getPbFromUser(id));
+        if(allMyPb.length === 0)
+            throw new AppError("Nenhum produto encontrado", 404);
+        return response.status(200).json(allMyPb);
+    }
+    catch(err){
         next(err);
     }
 }
@@ -61,4 +77,4 @@ const updatePb = async (request, response, next) => {
 }
 
 
-module.exports = { getAllPb, createPb, deletePb, updatePb, getPb };
+module.exports = { getAllPb, createPb, deletePb, updatePb, getPb, getAllMyPb };

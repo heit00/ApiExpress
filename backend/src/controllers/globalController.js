@@ -14,6 +14,7 @@ const errorMap = {
     '23503': { message: 'Registro relacionado não encontrado.', status: 403 },
     '23502': { message: 'Campo obrigatório ausente.', status: 400 },
     '22P02': { message: 'Formato de dado inválido.', status: 400 },
+    '42601': { message: 'Nenhum campo válido foi chamado.', status: 400}
 };
 
 const executeBdActionAsync = async (callback) => {
